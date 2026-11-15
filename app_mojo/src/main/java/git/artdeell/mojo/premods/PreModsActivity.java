@@ -32,9 +32,11 @@ import git.artdeell.mojo.instances.Instances;
 /** "Pre mods": one-tap install of recommended mods into the selected instance's mods folder. */
 public class PreModsActivity extends AppCompatActivity {
     private static final String UA = "MojoLauncher-PreMods/1.0 (github.com/ankitgoelgopal-dotcom/Repo2)";
-    private static final String MC_VERSION = "1.21.11";
-    private static final String TELEMETRY_URL =
-            "https://github.com/ankitgoelgopal-dotcom/Repo2/releases/download/mcp-telemetry/mcp-telemetry.jar";
+    private static final String DEFAULT_MC_VERSION = "1.21.11";
+    private static final String RELEASE_BASE =
+            "https://github.com/ankitgoelgopal-dotcom/Repo2/releases/download/mcp-telemetry/";
+    private static final java.util.regex.Pattern MC_VERSION_PATTERN =
+            java.util.regex.Pattern.compile("\\d+\\.\\d+(\\.\\d+)?(-snapshot-\\d+|-pre\\d+|-rc\\d+)?");
 
     private static final class PreMod {
         final String title, description, filePrefix, fixedUrl, fixedName, modrinthProject;
@@ -53,10 +55,10 @@ public class PreModsActivity extends AppCompatActivity {
 
     private final PreMod[] mods = {
             new PreMod("MCP Telemetry",
-                    "Lets Claude read your coordinates, health and inventory (used by MCP Companion). Fabric " + MC_VERSION + ".",
-                    "mcp-telemetry", TELEMETRY_URL, "mcp-telemetry.jar", null),
+                    "Lets Claude read your coordinates, health and inventory (used by MCP Companion). Fabric 1.21.11 or 26.3 - the right build is picked for your instance.",
+                    "mcp-telemetry", null, null, null),
             new PreMod("Fabric API",
-                    "Required library for Fabric mods, including MCP Telemetry. Downloaded from Modrinth for " + MC_VERSION + ".",
+                    "Required library for Fabric mods, including MCP Telemetry. Downloaded from Modrinth for your instance's Minecraft version.",
                     "fabric-api", null, null, "fabric-api"),
     };
 
@@ -64,6 +66,19 @@ public class PreModsActivity extends AppCompatActivity {
     private TextView targetView, warnView;
     private volatile File modsDir;
     private volatile String instanceName = "", instanceVersion = "";
+    private volatile String mcVersion = DEFAULT_MC_VERSION;
+
+    /** Minecraft version of an instance id such as "fabric-loader-0.20.1-26.3" -> "26.3" (last version-like token). */
+    private static String detectMcVersion(String versionId) {
+        java.util.regex.Matcher m = MC_VERSION_PATTERN.matcher(versionId == null ? "" : versionId);
+        String last = null;
+        while (m.find()) last = m.group();
+        return last == null ? DEFAULT_MC_VERSION : last;
+    }
+
+    private boolean telemetrySupported() {
+        return mcVersion.equals("1.21.11") || mcVersion.startsWith("26.3");
+    }
 
     private int dp(int v) {
         return (int) (v * getResources().getDisplayMetrics().density);
@@ -112,7 +127,7 @@ public class PreModsActivity extends AppCompatActivity {
             card.addView(m.button, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             root.addView(card);
         }
-        root.addView(text("Tip: for these mods, make the selected instance a Fabric " + MC_VERSION + " instance.", 13, false));
+        root.addView(text("Tip: for these mods, make the selected instance a Fabric 1.21.11 or Fabric 26.3 instance.", 13, false));
     }
 
     @Override
@@ -123,6 +138,7 @@ public class PreModsActivity extends AppCompatActivity {
                 Instance inst = Instances.loadSelectedInstance();
                 instanceName = inst.name;
                 instanceVersion = String.valueOf(inst.versionId);
+                mcVersion = detectMcVersion(instanceVersion);
                 modsDir = new File(inst.getGameDirectory(), "mods");
             } catch (Throwable t) {
                 modsDir = null;
@@ -156,10 +172,10 @@ public class PreModsActivity extends AppCompatActivity {
             targetView.setText("Instance: " + instanceName + "\nMods folder: " + modsDir.getAbsolutePath());
         }
         String v = instanceVersion.toLowerCase(Locale.ROOT);
-        boolean ok = v.contains("fabric") && v.contains(MC_VERSION);
+        boolean ok = v.contains("fabric") && telemetrySupported();
         warnView.setVisibility(modsDir != null && !ok ? View.VISIBLE : View.GONE);
-        warnView.setText("This instance (" + instanceVersion + ") does not look like Fabric " + MC_VERSION
-                + ". The mods will be copied, but they will only load on a matching Fabric instance.");
+        warnView.setText("This instance (" + instanceVersion + ") does not look like Fabric 1.21.11 or 26.3. "
+                + "The mods will be copied, but MCP Telemetry only loads on those versions.");
         for (PreMod m : mods) {
             File f = installedFile(m);
             m.button.setEnabled(modsDir != null);
@@ -202,12 +218,16 @@ public class PreModsActivity extends AppCompatActivity {
         if (dir == null) throw new IllegalStateException("No instance selected");
         if (!dir.isDirectory() && !dir.mkdirs()) throw new IllegalStateException("Cannot create " + dir);
         String url = m.fixedUrl, name = m.fixedName;
+        if (m.filePrefix.equals("mcp-telemetry")) {
+            name = mcVersion.startsWith("26.") ? "mcp-telemetry-26.jar" : "mcp-telemetry.jar";
+            url = RELEASE_BASE + name;
+        }
         if (m.modrinthProject != null) {
             String q = "https://api.modrinth.com/v2/project/" + m.modrinthProject + "/version?game_versions="
-                    + URLEncoder.encode("[\"" + MC_VERSION + "\"]", "UTF-8")
+                    + URLEncoder.encode("[\"" + mcVersion + "\"]", "UTF-8")
                     + "&loaders=" + URLEncoder.encode("[\"fabric\"]", "UTF-8");
             JSONArray versions = new JSONArray(readString(q));
-            if (versions.length() == 0) throw new IllegalStateException("No " + m.title + " build for " + MC_VERSION);
+            if (versions.length() == 0) throw new IllegalStateException("No " + m.title + " build for " + mcVersion);
             JSONArray files = versions.getJSONObject(0).getJSONArray("files");
             JSONObject pick = files.getJSONObject(0);
             for (int i = 0; i < files.length(); i++) {

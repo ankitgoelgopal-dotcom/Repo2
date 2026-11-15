@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "mcp-telemetry",
+	"version": "${version}",
+	"name": "MCP Telemetry",
+	"description": "Exposes live player data (position, health, inventory, nearby entities) on 127.0.0.1:3001 for the Mojo Launcher MCP Companion.",
+	"authors": ["MCP Companion"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.mojomcp.telemetry.McpTelemetryMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
