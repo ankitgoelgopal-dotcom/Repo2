@@ -137,6 +137,15 @@ android {
             signingConfig signingConfigs.googlePlayBuild
             matchingFallbacks += List.of("release")
         }
+        // Normal (non-debug) build for personal use: its own package id so it can sit next to the official app.
+        repo2Release {
+            initWith release
+            applicationIdSuffix '.repo2'
+            signingConfig signingConfigs.customDebug
+            resValue 'string', 'storageProviderAuthorities', 'git.artdeell.mjlaunch.scoped.gamefolder.repo2'
+            resValue 'string', 'application_package', 'git.artdeell.mjlaunch.repo2'
+            matchingFallbacks += List.of("release")
+        }
         pubRelease {
             initWith release
             signingConfig signingConfigs.publicBuild
