@@ -180,7 +180,9 @@ public class McpCompanionActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        ContextCompat.registerReceiver(this, receiver, new IntentFilter(McpState.ACTION_STATUS), ContextCompat.RECEIVER_NOT_EXPORTED);
+        IntentFilter filter = new IntentFilter(McpState.ACTION_STATUS);
+        if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(receiver, filter); // status broadcasts are package-restricted anyway
         startService(new Intent(this, McpCompanionService.class).setAction(McpState.ACTION_QUERY));
     }
 
