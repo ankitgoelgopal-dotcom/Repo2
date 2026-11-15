@@ -47,6 +47,7 @@
     <string name="mcl_options">Options</string>
     <string name="mcl_option_customcontrol">Custom controls</string>
     <string name="mcp_companion_title">MCP Companion</string>
+    <string name="premods_title">Pre mods</string>
 
 
     <string name="mcl_setting_title_use_surface_view">Use alternate surface rendering</string>

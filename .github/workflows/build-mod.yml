@@ -7,6 +7,9 @@ on:
       - 'mods/mcp-telemetry/**'
       - '.github/workflows/build-mod.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -38,3 +41,14 @@ jobs:
           path: |
             mods/mcp-telemetry/build/libs/*.jar
             !mods/mcp-telemetry/build/libs/*-sources.jar
+      - name: Publish jar for the launcher's Pre mods download
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR=$(ls build/libs/mcp-telemetry-*.jar | grep -v sources | head -1)
+          cp "$JAR" /tmp/mcp-telemetry.jar
+          gh release view mcp-telemetry --repo "${{ github.repository }}" >/dev/null 2>&1 || \
+            gh release create mcp-telemetry --repo "${{ github.repository }}" --target "${{ github.sha }}" \
+              --title "MCP Telemetry mod (latest build)" --notes "Auto-published by CI. Downloaded by the launcher's Pre mods screen." --prerelease
+          gh release upload mcp-telemetry /tmp/mcp-telemetry.jar --repo "${{ github.repository }}" --clobber

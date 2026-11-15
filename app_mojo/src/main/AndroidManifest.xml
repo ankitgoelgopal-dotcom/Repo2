@@ -129,6 +129,9 @@
             </intent-filter>
         </provider>
 
+        <activity android:name=".premods.PreModsActivity"
+            android:label="Pre mods"
+            android:theme="@style/MojoLauncher.AppTheme" />
         <activity android:name=".mcp.McpCompanionActivity"
             android:label="MCP Companion"
             android:theme="@style/MojoLauncher.AppTheme" />

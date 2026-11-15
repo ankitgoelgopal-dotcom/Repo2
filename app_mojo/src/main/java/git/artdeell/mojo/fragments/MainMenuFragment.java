@@ -64,6 +64,8 @@ public class MainMenuFragment extends Fragment {
         mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
         view.findViewById(R.id.mcp_companion_button).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), git.artdeell.mojo.mcp.McpCompanionActivity.class)));
+        view.findViewById(R.id.premods_button).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), git.artdeell.mojo.premods.PreModsActivity.class)));
         mInstallJarButton.setOnClickListener(v -> runInstallerWithConfirmation());
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
