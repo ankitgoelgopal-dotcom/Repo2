@@ -42,6 +42,18 @@ final class McpTools {
                 new JSONObject().put("action", prop("string", "Which action").put("enum", actions))
                         .put("duration_ms", prop("integer", "How long to hold, in milliseconds"))
                         .put("slot", prop("integer", "Hotbar slot 1-9, only for hotbar_slot")), "action"));
+        tools.put(tool("move_to", "Walk in a straight line to world coordinates (no pathfinding; it hops small obstacles). Runs in the background: poll get_player_status. "
+                        + "Needs the MCP Telemetry mod.",
+                new JSONObject().put("x", prop("number", "Target X")).put("y", prop("number", "Target Y"))
+                        .put("z", prop("number", "Target Z")).put("timeout_ms", prop("integer", "Give up after this long (default 60000)")),
+                "x", "y", "z"));
+        tools.put(tool("follow_player", "Keep walking toward a nearby player or entity by name until stopped (release_all stops it). Needs the telemetry mod; the target must be within 48 blocks.",
+                new JSONObject().put("player_name", prop("string", "Exact player name")), "player_name"));
+        tools.put(tool("mine_block", "Aim at the block at (x,y,z) and hold attack. Move within ~4 blocks first. Does not verify the block broke.",
+                new JSONObject().put("x", prop("integer", "Block X")).put("y", prop("integer", "Block Y")).put("z", prop("integer", "Block Z"))
+                        .put("duration_ms", prop("integer", "How long to mine (default 2500, max 30000)")), "x", "y", "z"));
+        tools.put(tool("place_block", "Aim at the top face of the block under (x,y,z) and use the held item once, so a block is placed at (x,y,z). Select the item with perform_action hotbar_slot first.",
+                new JSONObject().put("x", prop("integer", "Target X")).put("y", prop("integer", "Target Y")).put("z", prop("integer", "Target Z")), "x", "y", "z"));
         tools.put(tool("release_all", "Release every held key and mouse button immediately.", new JSONObject()));
         tools.put(tool("toggle_anti_afk", "Enable/disable subtle randomized movements every ~20-45 s to avoid idle kicks.",
                 new JSONObject().put("enabled", prop("boolean", "true to enable")), "enabled"));
@@ -75,11 +87,14 @@ final class McpTools {
                     return text("Unknown mode: " + m, true);
                 }
                 case "get_player_status": {
+                    JSONObject tel = McpTelemetry.read();
                     JSONObject o = new JSONObject().put("mode", McpState.mode)
+                            .put("navigation", McpNav.status())
+                            .put("telemetry", tel == null ? JSONObject.NULL : tel)
                             .put("game_running", McpInput.gameReady())
                             .put("paused_by_user", McpState.paused)
                             .put("anti_afk", McpInput.isAntiAfk())
-                            .put("note", "Coordinates, health, hunger and inventory need a client-side mod and are not available yet.");
+                            .put("note", tel == null ? "Telemetry mod not reachable: install the MCP Telemetry mod (Fabric 1.21.11) to get coordinates, health and inventory." : "ok");
                     return text(o.toString(), false);
                 }
                 case "send_chat":
@@ -94,6 +109,21 @@ final class McpTools {
                 case "perform_action":
                     return text("Started: " + McpInput.perform(args.getString("action"),
                             args.optLong("duration_ms", 0), args.optInt("slot", 0)), false);
+                case "move_to":
+                    return text(McpNav.moveTo(args.getDouble("x"), args.getDouble("y"), args.getDouble("z"),
+                            Math.max(1000, Math.min(args.optLong("timeout_ms", 60_000), 600_000))), false);
+                case "follow_player":
+                    return text(McpNav.follow(args.getString("player_name"), 300_000), false);
+                case "mine_block": {
+                    McpNav.aimAt(args.getInt("x") + 0.5, args.getInt("y") + 0.5, args.getInt("z") + 0.5);
+                    McpInput.perform("attack", Math.max(200, Math.min(args.optLong("duration_ms", 2500), 30_000)), 0);
+                    return text("Mining started.", false);
+                }
+                case "place_block": {
+                    McpNav.aimAt(args.getInt("x") + 0.5, args.getInt("y"), args.getInt("z") + 0.5);
+                    McpInput.perform("use", 120, 0);
+                    return text("Placed (aimed at the top of the block below).", false);
+                }
                 case "release_all":
                     McpInput.releaseAll();
                     return text("Released all inputs.", false);
@@ -105,6 +135,9 @@ final class McpTools {
                 default:
                     return text("Unknown tool: " + name, true);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return text("Interrupted.", true);
         } catch (IllegalArgumentException | JSONException e) {
             return text(String.valueOf(e.getMessage()), true);
         }

@@ -185,6 +185,7 @@ public final class McpInput {
 
     /** Release every held key / mouse button. Safe to call from any thread, any time. */
     public static void releaseAll() {
+        McpNav.cancel();
         MAIN.post(() -> {
             for (Runnable r : pendingReleases.values()) {
                 MAIN.removeCallbacks(r);
@@ -195,6 +196,19 @@ public final class McpInput {
                 for (int k : KEYS.values()) down(k, -1, false);
                 down(-1, 0, false);
                 down(-1, 1, false);
+            }
+        });
+    }
+
+    /** Release only movement keys (used when navigation ends). Does not cancel navigation. */
+    static void releaseMovement() {
+        MAIN.post(() -> {
+            for (String n : new String[]{"forward", "sprint", "jump", "left", "right", "back"}) {
+                Integer k = KEYS.get(n);
+                if (k == null) continue;
+                Runnable r = pendingReleases.remove(k);
+                if (r != null) MAIN.removeCallbacks(r);
+                if (gameReady()) down(k, -1, false);
             }
         });
     }
