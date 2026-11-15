@@ -343,5 +343,7 @@ dependencies {
     implementation project(":sdl:jni_bindings")
     // implementation 'net.sourceforge.streamsupport:streamsupport-cfuture:1.7.0'
 
+    implementation 'org.nanohttpd:nanohttpd:2.3.1' // MCP companion embedded HTTP server
+
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 }

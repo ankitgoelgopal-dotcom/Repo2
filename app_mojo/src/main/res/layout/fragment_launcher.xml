@@ -60,12 +60,20 @@
 				app:layout_constraintTop_toBottomOf="@id/news_button" />
 
 			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/mcp_companion_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_px_gamepad"
+				android:text="@string/mcp_companion_title"
+				app:layout_constraintTop_toBottomOf="@id/custom_control_button" />
+
+			<com.kdt.mcgui.LauncherMenuButton
 				android:id="@+id/install_jar_button"
 				style="@style/LauncherMenuButton.Universal"
 				android:layout_width="match_parent"
 				android:drawableStart="@drawable/ic_px_java_run"
 				android:text="@string/main_install_jar_file"
-				app:layout_constraintTop_toBottomOf="@id/custom_control_button" />
+				app:layout_constraintTop_toBottomOf="@id/mcp_companion_button" />
 
 			<com.kdt.mcgui.LauncherMenuButton
 				android:id="@+id/share_logs_button"

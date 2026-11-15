@@ -223,6 +223,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     protected void initLayout(int resId) {
         setContentView(resId);
         bindValues();
+        git.artdeell.mojo.mcp.McpOverlay.attach(this);
         mControlLayout.setMenuListener(this);
 
         mDrawerPullButton.setOnClickListener(v -> onClickedMenu());

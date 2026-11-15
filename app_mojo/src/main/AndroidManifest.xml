@@ -129,6 +129,15 @@
             </intent-filter>
         </provider>
 
+        <activity android:name=".mcp.McpCompanionActivity"
+            android:label="MCP Companion"
+            android:theme="@style/MojoLauncher.AppTheme" />
+        <service android:name=".mcp.McpCompanionService" android:process=":game"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Hosts a local MCP server and tunnel so the user's own AI assistant can control their Minecraft session while it runs in the background." />
+        </service>
+
         <service android:name=".services.ProgressService"
             android:foregroundServiceType="dataSync"/>
         <service android:name=".services.GameService" android:process=":game"
