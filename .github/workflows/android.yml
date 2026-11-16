@@ -68,8 +68,13 @@ jobs:
         continue-on-error: true
         working-directory: cloudflared-src
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so ./cmd/cloudflared
-          ls -la ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so
+          if CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so ./cmd/cloudflared; then
+            SZ=$(stat -c %s ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so)
+            echo "::notice::PATCHED cloudflared built OK (${SZ} bytes, $(go version))"
+          else
+            echo "::warning::PATCHED cloudflared build FAILED - using the prebuilt one (tunnel DNS will not work)"
+            exit 1
+          fi
 
       - uses: gradle/actions/setup-gradle@v4
         with:
