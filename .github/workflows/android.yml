@@ -50,6 +50,27 @@ jobs:
           chmod +x app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so
           ls -la app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so
 
+      - name: Build cloudflared with Android DNS patch (clone)
+        continue-on-error: true
+        run: |
+          TAG=$(curl -fsSL https://api.github.com/repos/cloudflare/cloudflared/releases/latest | python3 -c "import json,sys;print(json.load(sys.stdin)['tag_name'])")
+          echo "cloudflared tag: $TAG"
+          git clone --depth 1 --branch "$TAG" https://github.com/cloudflare/cloudflared cloudflared-src
+          cp .github/cloudflared/androiddns.go cloudflared-src/cmd/cloudflared/androiddns.go
+
+      - uses: actions/setup-go@v5
+        continue-on-error: true
+        with:
+          go-version-file: cloudflared-src/go.mod
+          cache: false
+
+      - name: Build cloudflared with Android DNS patch (compile)
+        continue-on-error: true
+        working-directory: cloudflared-src
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so ./cmd/cloudflared
+          ls -la ../app_mojo/src/main/jniLibs/arm64-v8a/libcloudflared.so
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.14.5"

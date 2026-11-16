@@ -32,6 +32,9 @@ public class McpTunnel {
                 "--url", "http://127.0.0.1:" + port);
         pb.redirectErrorStream(true); // cloudflared logs to stderr; merging keeps parsing simple
         pb.environment().put("HOME", context.getFilesDir().getAbsolutePath());
+        // Go on Android has neither /etc/resolv.conf nor the usual CA folders: hand both over explicitly.
+        pb.environment().put("MCP_DNS", phoneDnsServers(context));
+        pb.environment().put("SSL_CERT_DIR", "/apex/com.android.conscrypt/cacerts:/system/etc/security/cacerts");
         pb.environment().put("TMPDIR", context.getCacheDir().getAbsolutePath());
         final Process p = pb.start();
         process = p;
@@ -61,6 +64,26 @@ public class McpTunnel {
         }, "mcp-cloudflared");
         t.setDaemon(true);
         t.start();
+    }
+
+    /** The phone's current IPv4 DNS servers (comma separated), or "" if unknown. */
+    private static String phoneDnsServers(Context context) {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            android.net.Network n = cm.getActiveNetwork();
+            android.net.LinkProperties lp = n == null ? null : cm.getLinkProperties(n);
+            if (lp == null) return "";
+            StringBuilder sb = new StringBuilder();
+            for (java.net.InetAddress a : lp.getDnsServers()) {
+                if (!(a instanceof java.net.Inet4Address) || a.isLoopbackAddress()) continue;
+                if (sb.length() > 0) sb.append(',');
+                sb.append(a.getHostAddress());
+            }
+            return sb.toString();
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
     public synchronized void stop() {
