@@ -118,6 +118,13 @@ jobs:
           fi
           mv app_mojo/build/outputs/apk/full/repo2Release/app_mojo-full-repo2Release.apk out/app-release-full.apk
 
+      - name: Report which cloudflared is inside the APKs
+        run: |
+          for f in out/app-debug-full.apk out/app-release-full.apk; do
+            L=$(unzip -l "$f" | grep -E "arm64-v8a/libcloudflared.so" | awk '{print $1}')
+            echo "::notice::$f contains libcloudflared.so = ${L:-MISSING} bytes (patched build is ~25690000, prebuilt is ~37668000)"
+          done
+
       - name: Build Debug .apk (No runtime)
         run: |
           gradle :app_mojo:assembleNoruntimeDebug
