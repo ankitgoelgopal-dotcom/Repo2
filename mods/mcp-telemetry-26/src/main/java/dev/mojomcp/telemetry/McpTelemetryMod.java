@@ -25,12 +25,17 @@ public class McpTelemetryMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         TelemetryServer.start(PORT);
+        latest = "{\"in_world\":false,\"note\":\"mod loaded, waiting for a world\"}";
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             if (++tick % 4 != 0) return; // ~5 snapshots per second
             try {
                 latest = snapshot(mc);
             } catch (Throwable t) {
-                latest = "{\"in_world\":false,\"error\":\"" + t.getClass().getSimpleName() + "\"}";
+                // Surface the exact failure (e.g. a game method that changed) instead of failing silently.
+                JsonObject err = new JsonObject();
+                err.addProperty("in_world", false);
+                err.addProperty("error", t.getClass().getSimpleName() + ": " + t.getMessage());
+                latest = err.toString();
             }
         });
     }

@@ -65,7 +65,11 @@ final class McpNav {
             throw new IllegalArgumentException("Telemetry mod not reachable. Install the MCP Telemetry mod "
                     + "(Fabric, Minecraft 1.21.11) in the instance you are playing and join a world.");
         }
-        if (!t.optBoolean("in_world")) throw new IllegalArgumentException("The player is not in a world yet.");
+        if (!t.optBoolean("in_world")) {
+            String err = t.optString("error", "");
+            throw new IllegalArgumentException(err.isEmpty() ? "The player is not in a world yet."
+                    : "Telemetry mod reported an error: " + err);
+        }
     }
 
     private static void sleep(long ms) throws InterruptedException {
