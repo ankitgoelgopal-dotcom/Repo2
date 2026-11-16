@@ -28,6 +28,23 @@ final class McpTelemetry {
         }
     }
 
+    static final int COMMAND_PORT = 3002;
+
+    /** Sends one allow-listed bot command (no leading slash) to the telemetry mod. */
+    static void sendCommand(String command) {
+        try (Socket s = new Socket()) {
+            s.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), COMMAND_PORT), 400);
+            s.setSoTimeout(800);
+            s.getOutputStream().write((command + "\n").getBytes(StandardCharsets.UTF_8));
+            s.getOutputStream().flush();
+            String reply = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8)).readLine();
+            if (!"ok".equals(reply)) throw new IllegalArgumentException("The telemetry mod refused the command: " + command);
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException("Bot command channel not reachable. Install the MCP Telemetry mod "
+                    + "(updated version) and join a world.");
+        }
+    }
+
     static double wrap180(double a) {
         return ((a % 360) + 540) % 360 - 180;
     }

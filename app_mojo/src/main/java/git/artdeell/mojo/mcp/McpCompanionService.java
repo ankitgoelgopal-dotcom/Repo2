@@ -38,7 +38,11 @@ public class McpCompanionService extends Service {
         String action = intent == null ? null : intent.getAction();
         if (McpState.ACTION_START.equals(action)) {
             startNotification();
+            applyMode(intent.getStringExtra(McpState.EXTRA_MODE));
             start(intent.getStringExtra(McpState.EXTRA_TOKEN));
+        } else if (McpState.ACTION_SET_MODE.equals(action)) {
+            applyMode(intent.getStringExtra(McpState.EXTRA_MODE));
+            broadcast();
         } else if (McpState.ACTION_TOGGLE_PAUSE.equals(action)) {
             McpState.paused = !McpState.paused;
             McpInput.releaseAll();
@@ -53,6 +57,14 @@ public class McpCompanionService extends Service {
             if (!McpState.running) stopSelf();
         }
         return START_NOT_STICKY;
+    }
+
+    private void applyMode(String mode) {
+        if (McpState.MODE_COMPANION.equals(mode) || McpState.MODE_TAKEOVER.equals(mode)) {
+            McpState.mode = mode;
+            McpInput.releaseAll(); // switching modes always drops held keys and any walking in progress
+            McpBot.cancel();
+        }
     }
 
     private void startNotification() {

@@ -75,15 +75,22 @@ public class McpCompanionActivity extends AppCompatActivity {
 
         root.addView(text("Control mode", 16, true));
         RadioGroup group = new RadioGroup(this);
-        RadioButton modeA = new RadioButton(this);
-        modeA.setText("Mode A: Companion Bot (separate account) - coming later");
-        modeA.setEnabled(false);
-        RadioButton modeB = new RadioButton(this);
+        final RadioButton modeA = new RadioButton(this);
+        modeA.setText("Mode A: Companion Bot (plays alongside me; needs Carpet mod + OP)");
+        modeA.setId(View.generateViewId());
+        final RadioButton modeB = new RadioButton(this);
         modeB.setText("Mode B: Take over my character (live control)");
         modeB.setId(View.generateViewId());
-        modeB.setChecked(true);
         group.addView(modeA);
         group.addView(modeB);
+        if (McpState.MODE_COMPANION.equals(prefs.getString("mode", McpState.MODE_TAKEOVER))) modeA.setChecked(true);
+        else modeB.setChecked(true);
+        group.setOnCheckedChangeListener((g, id) -> {
+            String m = id == modeA.getId() ? McpState.MODE_COMPANION : McpState.MODE_TAKEOVER;
+            prefs.edit().putString("mode", m).apply();
+            startService(new Intent(this, McpCompanionService.class)
+                    .setAction(McpState.ACTION_SET_MODE).putExtra(McpState.EXTRA_MODE, m));
+        });
         root.addView(group);
 
         toggle = new SwitchCompat(this);
@@ -141,7 +148,8 @@ public class McpCompanionActivity extends AppCompatActivity {
             if (updating) return;
             if (checked) {
                 Intent i = new Intent(this, McpCompanionService.class).setAction(McpState.ACTION_START)
-                        .putExtra(McpState.EXTRA_TOKEN, token()).putExtra(McpState.EXTRA_MODE, McpState.MODE_TAKEOVER);
+                        .putExtra(McpState.EXTRA_TOKEN, token())
+                        .putExtra(McpState.EXTRA_MODE, prefs.getString("mode", McpState.MODE_TAKEOVER));
                 ContextCompat.startForegroundService(this, i);
                 show(McpState.STATUS_STARTING, "", false, "");
             } else {

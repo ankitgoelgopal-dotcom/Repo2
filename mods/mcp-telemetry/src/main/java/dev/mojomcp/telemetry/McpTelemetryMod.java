@@ -1,5 +1,7 @@
 package dev.mojomcp.telemetry;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -16,6 +18,9 @@ import net.minecraft.world.item.ItemStack;
 /** Client-side telemetry: publishes a JSON snapshot of the local player over a loopback socket. */
 public class McpTelemetryMod implements ClientModInitializer {
     public static final int PORT = 3001;
+    public static final int COMMAND_PORT = 3002;
+    /** Allow-listed bot commands (no leading slash) waiting to be sent, one every few ticks. */
+    static final ConcurrentLinkedQueue<String> COMMANDS = new ConcurrentLinkedQueue<>();
     private static final int MAX_ENTITIES = 40;
     private static final double ENTITY_RANGE = 48.0;
 
@@ -25,9 +30,12 @@ public class McpTelemetryMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         TelemetryServer.start(PORT);
+        CommandServer.start(COMMAND_PORT);
         latest = "{\"in_world\":false,\"note\":\"mod loaded, waiting for a world\"}";
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-            if (++tick % 4 != 0) return; // ~5 snapshots per second
+            tick++;
+            if (tick % 5 == 0) drainCommand(mc); // at most ~4 commands per second
+            if (tick % 4 != 0) return; // ~5 snapshots per second
             try {
                 latest = snapshot(mc);
             } catch (Throwable t) {
@@ -38,6 +46,16 @@ public class McpTelemetryMod implements ClientModInitializer {
                 latest = err.toString();
             }
         });
+    }
+
+    private static void drainCommand(Minecraft mc) {
+        String c = COMMANDS.poll();
+        if (c == null || mc.player == null) return;
+        try {
+            mc.player.connection.sendCommand(c);
+        } catch (Throwable ignored) {
+            // never let a command problem affect the game
+        }
     }
 
     private static String snapshot(Minecraft mc) {

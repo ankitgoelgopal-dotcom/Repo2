@@ -12,6 +12,7 @@ public final class McpState {
     public static final String ACTION_STOP = "git.artdeell.mojo.mcp.STOP";
     public static final String ACTION_QUERY = "git.artdeell.mojo.mcp.QUERY";
     public static final String ACTION_TOGGLE_PAUSE = "git.artdeell.mojo.mcp.TOGGLE_PAUSE";
+    public static final String ACTION_SET_MODE = "git.artdeell.mojo.mcp.SET_MODE";
     public static final String ACTION_STATUS = "git.artdeell.mojo.mcp.STATUS";
 
     public static final String EXTRA_TOKEN = "token";
